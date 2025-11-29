@@ -23,7 +23,6 @@ class HyperLogLog {
   /** @brief Disable default constructor. */
   HyperLogLog() = delete;
 
-  /** @brief Parameterized constructor. */
   explicit HyperLogLog(int16_t n_bits);
 
   /**
@@ -33,17 +32,11 @@ class HyperLogLog {
    */
   auto GetCardinality() { return cardinality_; }
 
-  /**
-   * @brief Adds a value into the HyperLogLog.
-   *
-   * @param[in] val - value that's added into hyperloglog
-   */
   auto AddElem(KeyType val) -> void;
 
-  /**
-   * @brief Function that computes cardinality.
-   */
   auto ComputeCardinality() -> void;
+
+  auto GetBucketValue(std::bitset<64> bset) -> int;
 
  private:
   /**
@@ -62,29 +55,17 @@ class HyperLogLog {
     return bustub::HashUtil::HashValue(&val_obj);
   }
 
-  /**
-   * @brief Function that computes binary.
-   *
-   *
-   * @param[in] hash
-   * @returns binary of a given hash
-   */
   auto ComputeBinary(const hash_t &hash) const -> std::bitset<BITSET_CAPACITY>;
 
-  /**
-   * @brief Function that computes leading zeros.
-   *
-   * @param[in] bset - binary values of a given bitset
-   * @returns leading zeros of given binary set
-   */
   auto PositionOfLeftmostOne(const std::bitset<BITSET_CAPACITY> &bset) const -> uint64_t;
 
   /** @brief Cardinality value. */
   size_t cardinality_;
 
   /** @todo (student) can add their data structures that support HyperLogLog */
-  size_t bits_;
-  std::vector<uint8_t> buckets_;  //存储每个桶的最大前导零数
+  int16_t n_bits_;
+  std::vector<uint8_t> buckets_;
+  uint8_t p_;
 };
 
 }  // namespace bustub

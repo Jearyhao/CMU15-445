@@ -1,78 +1,87 @@
 #include "primer/hyperloglog.h"
-#include <cmath>
 
 namespace bustub {
 
+/** @brief Parameterized constructor. */
 template <typename KeyType>
-HyperLogLog<KeyType>::HyperLogLog(int16_t n_bits) : cardinality_(0), bits_(n_bits), buckets_(1 << n_bits, 0) {}
-
-template <typename KeyType>
-auto HyperLogLog<KeyType>::ComputeBinary(const hash_t &hash) const -> std::bitset<BITSET_CAPACITY> {
-  return {hash};
-}
-
-template <typename KeyType>
-auto HyperLogLog<KeyType>::PositionOfLeftmostOne(const std::bitset<BITSET_CAPACITY> &bset) const -> uint64_t {
-  // 边界检查
-  if (bits_ >= 64) {
-    return 1;  // 没有剩余位
-  }
-
-  int64_t max_bit = 64 - static_cast<int64_t>(bits_) - 1;
-
-  for (int64_t i = max_bit; i >= 0; i--) {
-    if (static_cast<int>(bset[i]) == 1) {
-      return max_bit - i + 1;
-    }
-  }
-  return max_bit + 2;  // 全是 0
-}
-
-template <typename KeyType>
-auto HyperLogLog<KeyType>::AddElem(KeyType val) -> void {
-  hash_t hash = CalculateHash(val);
-
-  // 边界检查：防止右移 64 位
-  size_t bucket_idx = 0;
-  hash_t remaining = hash;
-
-  if (bits_ > 0 && bits_ < 64) {
-    bucket_idx = hash >> (64 - bits_);
-    remaining = hash & ((1ULL << (64 - bits_)) - 1);
-  } else if (bits_ == 64) {
-    bucket_idx = hash;  // 所有位都是索引
-    remaining = 0;
-  }
-  // bits_ == 0 时，bucket_idx = 0, remaining = hash
-
-  std::bitset<BITSET_CAPACITY> binary = ComputeBinary(remaining);
-  uint64_t leading_zeros = PositionOfLeftmostOne(binary);
-
-  buckets_[bucket_idx] = std::max(buckets_[bucket_idx], static_cast<uint8_t>(leading_zeros));
-}
-
-template <typename KeyType>
-auto HyperLogLog<KeyType>::ComputeCardinality() -> void {
-  double sum = 0.0;
-  int zero_count = 0;  // 统计值为 0 的桶数量
-
-  for (const auto &bucket : buckets_) {
-    if (bucket == 0) {
-      zero_count++;
-    }
-    sum += std::pow(2.0, -static_cast<double>(bucket));
-  }
-
-  auto m = static_cast<double>(buckets_.size());
-
-  // 修复：如果所有桶都是 0，基数为 0
-  if (zero_count == static_cast<int>(m)) {
-    cardinality_ = 0;
+HyperLogLog<KeyType>::HyperLogLog(int16_t n_bits) : cardinality_(0) {
+  if (n_bits < 0) {
     return;
   }
+  n_bits_ = n_bits;
+  buckets_.resize(1 << n_bits_, 0);
+}
 
-  double alpha = CONSTANT * m * m;
-  cardinality_ = static_cast<size_t>(alpha / sum);
+/**
+ * @brief Function that computes binary.
+ *
+ * @param[in] hash
+ * @returns binary of a given hash
+ */
+template <typename KeyType>
+auto HyperLogLog<KeyType>::ComputeBinary(const hash_t &hash) const -> std::bitset<BITSET_CAPACITY> {
+  /** @TODO(student) Implement this function! */
+  return hash;
+}
+
+/**
+ * @brief Function that computes leading zeros.
+ *
+ * @param[in] bset - binary values of a given bitset
+ * @returns leading zeros of given binary set
+ */
+template <typename KeyType>
+auto HyperLogLog<KeyType>::PositionOfLeftmostOne(const std::bitset<BITSET_CAPACITY> &bset) const -> uint64_t {
+  /** @TODO(student) Implement this function! */
+  int b = static_cast<int>(n_bits_);
+  for (int i = BITSET_CAPACITY - b - 1; i >= 0; i--) {
+    if (bset[i]) {
+      return BITSET_CAPACITY - b - i;
+    }
+  }
+  return 0;
+}
+
+/**
+ * @brief Adds a value into the HyperLogLog.
+ *
+ * @param[in] val - value that's added into hyperloglog
+ */
+template <typename KeyType>
+auto HyperLogLog<KeyType>::AddElem(KeyType val) -> void {
+  /** @TODO(student) Implement this function! */
+  auto hash_val = CalculateHash(val);
+  auto bset = ComputeBinary(hash_val);
+  uint8_t first_1_position = PositionOfLeftmostOne(bset);
+  auto insert_position = GetBucketValue(bset);
+  buckets_[insert_position] = std::max(first_1_position, buckets_[insert_position]);
+}
+
+/**
+ * @brief Function that computes cardinality.
+ */
+template <typename KeyType>
+auto HyperLogLog<KeyType>::ComputeCardinality() -> void {
+  /** @TODO(student) Implement this function! */
+  double sum = 0;
+  for (auto bucket : buckets_) {
+    sum += 1.0 / std::pow(2, bucket);
+  }
+  if (sum != 0) {
+    auto m = buckets_.size();
+    auto result = CONSTANT * m * m / sum;
+    cardinality_ = static_cast<size_t>(result);
+  }
+}
+
+template <typename KeyType>
+auto HyperLogLog<KeyType>::GetBucketValue(std::bitset<BITSET_CAPACITY> bset) -> int {
+  int position = 0;
+  for (int i = BITSET_CAPACITY - n_bits_; i < BITSET_CAPACITY; i++) {
+    position += static_cast<int>(bset[i]) << (i - BITSET_CAPACITY + n_bits_);
+    /* code */
+  }
+  return position;
 }
 
 template class HyperLogLog<int64_t>;
