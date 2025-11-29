@@ -84,7 +84,7 @@ class HyperLogLog {
 
   /** @todo (student) can add their data structures that support HyperLogLog */
   size_t bits_;
-  std::vector<uint8_t> buckets_; //存储每个桶的最大前导零数
+  std::vector<uint8_t> buckets_;  //存储每个桶的最大前导零数
 };
 
 }  // namespace bustub
